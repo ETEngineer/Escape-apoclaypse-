@@ -1,0 +1,95 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class grappleMovement : MonoBehaviour
+{
+    public GameObject line;
+    public GameObject grappleHook;
+    private LineRenderer drawLine;
+
+    public Camera cam;
+
+    private bool stop1 = false;
+    private bool stop2 = false;
+    private bool CoolStart = false;
+
+    private Vector3 moveDirection = new Vector3();
+
+    public float coolDownTime;
+    public float grappleSpeed;
+    public float stopConstraint;
+    private Vector3 mousePosition = new Vector3();  
+
+    void Start()
+    {
+        drawLine = line.GetComponent<LineRenderer>();
+        cam = Camera.main;
+
+        transform.Translate(0,0,0);
+    }
+
+    void Update()
+    {
+        bool grapple = Input.GetButtonDown("Fire1");      
+        Vector3 position = new Vector3(transform.position.x,transform.position.y,0);
+
+        if(grapple && !stop1)
+        {
+            mousePosition = cam.ScreenToWorldPoint(Input.mousePosition);
+            mousePosition = new Vector3(mousePosition.x,mousePosition.y,0);
+            stop1 = true;
+            moveDirection = (mousePosition - position).normalized;
+            drawLine.SetPosition(0,position);
+            drawLine.SetPosition(1,mousePosition);  
+        }          
+        
+        if(stop1)
+        {
+            if((mousePosition - grappleHook.transform.position).magnitude >= stopConstraint)
+            {
+                grappleHook.transform.Translate(moveDirection * grappleSpeed * Time.deltaTime);
+                drawLine.SetPosition(1,grappleHook.transform.position);
+            }
+            else
+            {
+                stop1 = false;
+                stop2 = true;
+            }
+        }
+
+        if(stop2)
+        {
+            if((mousePosition - position).magnitude <= stopConstraint)
+            {
+                CoolStart = true;
+                stop2 = false;
+            }
+            else
+            {
+                transform.Translate(moveDirection * grappleSpeed * Time.deltaTime);
+                drawLine.SetPosition(0,position);
+            }
+        }
+
+        if(CoolStart)
+        {
+            if(Time.time > coolDownTime)
+            {
+                stop1 = false;
+                CoolStart = false;
+                coolDownTime += Time.time;
+                Debug.Log("Cool Time done");
+                Vector3 setPos = new Vector3(position.x,position.y,0);
+                drawLine.SetPosition(0,setPos);
+                drawLine.SetPosition(1,setPos);
+                mousePosition = new Vector3();
+            }
+            else
+            {
+                stop2 = true;
+            }
+        }
+
+    }
+}
